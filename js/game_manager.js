@@ -41,7 +41,7 @@ GameManager.prototype.setup = function () {
   this.grid = new Grid(this.size);
   this.grid.addStartTiles();
 
-  this.worker = new Worker('worker.js');
+  this.worker = new Worker('js/worker.js');
 
   this.score = 0;
   this.over = false;
