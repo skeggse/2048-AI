@@ -95,7 +95,7 @@ GameManager.prototype.think = function (callback) {
   this.worker.addEventListener('message', function onmessage (event) {
     var data = event.data;
     if (data.id === id) {
-      this.worker.removeEventlistener('message', onmessage);
+      this.worker.removeEventListener('message', onmessage);
       callback({
         move: data.move
       });
