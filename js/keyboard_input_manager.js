@@ -37,12 +37,12 @@ KeyboardInputManager.prototype.listen = function () {
   document.addEventListener("keydown", function (event) {
     var modifiers = event.altKey || event.ctrlKey || event.metaKey ||
                     event.shiftKey;
-    var mapped    = map[event.which];
+    var mapped = map[event.which];
 
     if (!modifiers) {
       if (mapped !== undefined) {
         event.preventDefault();
-        var feedbackContainer  = document.getElementById('feedback-container');
+        var feedbackContainer = document.getElementById('feedback-container');
         feedbackContainer.innerHTML = ' ';
         self.emit("move", mapped);
       }
@@ -57,7 +57,7 @@ KeyboardInputManager.prototype.listen = function () {
   var hintButton = document.getElementById('hint-button');
   hintButton.addEventListener('click', function(e) {
     e.preventDefault();
-    var feedbackContainer  = document.getElementById('feedback-container');
+    var feedbackContainer = document.getElementById('feedback-container');
     feedbackContainer.innerHTML = '<img src=img/spinner.gif />';
     self.emit('think');
   });
@@ -74,11 +74,11 @@ KeyboardInputManager.prototype.listen = function () {
                   Hammer.DIRECTION_DOWN, Hammer.DIRECTION_LEFT];
 
   var gameContainer = document.getElementsByClassName("game-container")[0];
-  var handler       = Hammer(gameContainer, {
+  var handler = Hammer(gameContainer, {
     drag_block_horizontal: true,
     drag_block_vertical: true
   });
-  
+
   handler.on("swipe", function (event) {
     event.gesture.preventDefault();
     mapped = gestures.indexOf(event.gesture.direction);

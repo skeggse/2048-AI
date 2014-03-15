@@ -1,14 +1,14 @@
 function Tile(position, value) {
-  this.x                = position.x;
-  this.y                = position.y;
-  this.value            = value || 2;
+  this.x = position.x;
+  this.y = position.y;
+  this.value = value || 2;
 
   this.previousPosition = null;
-  this.mergedFrom       = null; // Tracks tiles that merged together
+  this.mergedFrom = null; // Tracks tiles that merged together
 }
 
 Tile.prototype.savePosition = function () {
-  this.previousPosition = { x: this.x, y: this.y };
+  this.previousPosition = new Vector(this.x, this.y);
 };
 
 Tile.prototype.updatePosition = function (position) {
@@ -17,7 +17,7 @@ Tile.prototype.updatePosition = function (position) {
 };
 
 Tile.prototype.clone = function() {
-  newTile = new Tile({ x: this.x, y: this.y }, this.value);
+  newTile = new Tile(new Vector(this.x, this.y), this.value);
   //newTile.previousPosition = { x: this.previousPosition.x, y: this.previousPosition.y };
   //newTile.mergedFrom = { x: this.previousPosition.x, y: this.previousPosition.y };
   return newTile;

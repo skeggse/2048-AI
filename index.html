@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>2048</title>
+  <title>2048 AI</title>
 
   <link href="style/main.css" rel="stylesheet" type="text/css">
   <link href="style/ai.css" rel="stylesheet" type="text/css">
@@ -25,13 +25,13 @@
     </div>
     <p class="game-intro">Join the numbers and get to the <strong>2048 tile!</strong></p>
 
-    <div class='controls'>
-      <div id='hint-button-container'>
-        <button id='hint-button' class='ai-button'>Get Hint</button>
+    <div class="controls">
+      <div id="hint-button-container">
+        <button id="hint-button" class="ai-button">Get Hint</button>
       </div>
-      <div id='feedback-container'> </div>
-      <div id='run-button-container'>
-        <button id='run-button' class='ai-button'>Auto-run</button>
+      <div id="feedback-container"> </div>
+      <div id="run-button-container">
+        <button id="run-button" class="ai-button">Auto-run</button>
       </div>
     </div>
 
@@ -86,6 +86,9 @@
     <p>
     AI solver by <a href="https://github.com/ov3y/2048-AI">Matt Overlan</a>
     </p>
+    <p>
+    Tweaks by <a href="https://github.com/skeggse/2048-AI">Eli Skeggs</a>
+  </p>
     <div class="sharing">
       <a href="https://twitter.com/share" class="twitter-share-button" data-text="Check out 2048, a game where you join numbers to score high! #2048game #2048ai" data-via="gabrielecirulli">Tweet</a>
       <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
@@ -102,9 +105,9 @@
   <script src="js/hammer.min.js"></script>
   <script src="js/keyboard_input_manager.js"></script>
   <script src="js/html_actuator.js"></script>
+  <script src="js/vector.js"></script>
   <script src="js/grid.js"></script>
   <script src="js/tile.js"></script>
-  <script src="js/ai.js"></script>
   <script src="js/game_manager.js"></script>
   <script src="js/application.js"></script>
 

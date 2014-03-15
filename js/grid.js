@@ -1,6 +1,6 @@
 function Grid(size) {
   this.size = size;
-  this.startTiles   = 2;
+  this.startTiles = 2;
 
   this.cells = [];
 
@@ -8,12 +8,40 @@ function Grid(size) {
   this.playerTurn = true;
 }
 
+Grid.unserialize = function (obj) {
+  var grid = new Grid(obj.size), cells = obj.cells, cell;
+  grid.playerTurn = obj.playerTurn;
+  for (var i = 0, n = cells.length; i < n; i++) {
+    cell = cells[i];
+    grid.insertTile(new Tile(new Vector(cell.x, cell.y), cell.value));
+  }
+  return grid;
+};
+
+Grid.prototype.serialize = function() {
+  var cells = [], x = 0, y, s = this.size, c = this.cells;
+  for (; x < s; x++) {
+    for (y = 0; y < s; y++) {
+      c[x][y] && cells.push({
+        x: x,
+        y: y,
+        value: c[x][y].value
+      });
+    }
+  }
+  return {
+    size: s,
+    playerTurn: this.playerTurn,
+    cells: cells
+  };
+};
+
 // pre-allocate these objects (for speed)
 Grid.prototype.indexes = [];
-for (var x=0; x<4; x++) {
+for (var x = 0; x < 4; x++) {
   Grid.prototype.indexes.push([]);
-  for (var y=0; y<4; y++) {
-    Grid.prototype.indexes[x].push( {x:x, y:y} );
+  for (var y = 0; y < 4; y++) {
+    Grid.prototype.indexes[x].push(new Vector(x, y));
   }
 }
 
@@ -28,56 +56,76 @@ Grid.prototype.build = function () {
   }
 };
 
-
 // Find the first available random position
 Grid.prototype.randomAvailableCell = function () {
   var cells = this.availableCells();
 
   if (cells.length) {
-    return cells[Math.floor(Math.random() * cells.length)];
+    return cells[(Math.random() * cells.length) | 0];
   }
 };
 
 Grid.prototype.availableCells = function () {
   var cells = [];
-  var self = this;
+  var x = 0, y, s = this.size, c = this.cells;
+
+  for (; x < s; x++) {
+    for (y = 0; y < s; y++) {
+      if (!c[x][y]) {
+        cells.push(new Vector(x, y));
+      }
+    }
+  }
+
+  /*var self = this;
 
   this.eachCell(function (x, y, tile) {
     if (!tile) {
       //cells.push(self.indexes[x][y]);
-      cells.push( {x:x, y:y} );
+      cells.push(new Vector(x, y));
     }
-  });
+  });*/
 
   return cells;
 };
 
 // Call callback for every cell
 Grid.prototype.eachCell = function (callback) {
-  for (var x = 0; x < this.size; x++) {
-    for (var y = 0; y < this.size; y++) {
-      callback(x, y, this.cells[x][y]);
+  var x = 0, y, s = this.size, c = this.cells;
+  for (; x < s; x++) {
+    for (y = 0; y < s; y++) {
+      callback(x, y, c[x][y]);
     }
   }
 };
 
 // Check if there are any cells available
 Grid.prototype.cellsAvailable = function () {
-  return !!this.availableCells().length;
+  var x = 0, y, s = this.size, c = this.cells;
+  for (; x < s; x++) {
+    for (y = 0; y < s; y++) {
+      if (!c[x][y]) {
+        return true;
+      }
+    }
+  }
+  return false;
 };
 
 // Check if the specified cell is taken
-Grid.prototype.cellAvailable = function (cell) {
-  return !this.cellOccupied(cell);
+Grid.prototype.cellAvailable = function (x, y) {
+  return !this.cellOccupied(x, y);
 };
 
-Grid.prototype.cellOccupied = function (cell) {
-  return !!this.cellContent(cell);
+Grid.prototype.cellOccupied = function (x, y) {
+  return !!this.cellContent(x, y);
 };
 
-Grid.prototype.cellContent = function (cell) {
-  if (this.withinBounds(cell)) {
-    return this.cells[cell.x][cell.y];
+Grid.prototype.cellContent = function (x, y) {
+  // if (this.withinBounds(x, y)) {
+  if (x >= 0 && x < this.size &&
+      y >= 0 && y < this.size) {
+    return this.cells[x][y];
   } else {
     return null;
   }
@@ -92,19 +140,18 @@ Grid.prototype.removeTile = function (tile) {
   this.cells[tile.x][tile.y] = null;
 };
 
-Grid.prototype.withinBounds = function (position) {
-  return position.x >= 0 && position.x < this.size &&
-         position.y >= 0 && position.y < this.size;
+Grid.prototype.withinBounds = function (x, y) {
+  return x >= 0 && x < this.size &&
+         y >= 0 && y < this.size;
 };
 
 Grid.prototype.clone = function() {
-  newGrid = new Grid(this.size);
+  var x = 0, y, s = this.size, c = this.cells;
+  newGrid = new Grid(s);
   newGrid.playerTurn = this.playerTurn;
-  for (var x = 0; x < this.size; x++) {
-    for (var y = 0; y < this.size; y++) {
-      if (this.cells[x][y]) {
-        newGrid.insertTile(this.cells[x][y].clone());
-      }
+  for (; x < s; x++) {
+    for (y = 0; y < s; y++) {
+      c[x][y] && newGrid.insertTile(c[x][y].clone());
     }
   }
   return newGrid;
@@ -112,7 +159,7 @@ Grid.prototype.clone = function() {
 
 // Set up the initial tiles to start the game with
 Grid.prototype.addStartTiles = function () {
-  for (var i=0; i<this.startTiles; i++) {
+  for (var i = 0; i < this.startTiles; i++) {
     this.addRandomTile();
   }
 };
@@ -146,18 +193,12 @@ Grid.prototype.moveTile = function (tile, cell) {
 };
 
 
-Grid.prototype.vectors = {
-  0: { x: 0,  y: -1 }, // up
-  1: { x: 1,  y: 0 },  // right
-  2: { x: 0,  y: 1 },  // down
-  3: { x: -1, y: 0 }   // left
-}
-
-// Get the vector representing the chosen direction
-Grid.prototype.getVector = function (direction) {
-  // Vectors representing tile movement
-  return this.vectors[direction];
-};
+Grid.prototype.vectors = [
+  new Vector(0, -1), // up
+  new Vector(1, 0), // right
+  new Vector(0, 1), // down
+  new Vector(-1, 0) // left
+];
 
 // Move tiles on the grid in the specified direction
 // returns true if move was successful
@@ -165,29 +206,34 @@ Grid.prototype.move = function (direction) {
   // 0: up, 1: right, 2:down, 3: left
   var self = this;
 
-  var cell, tile;
+  var cell, tile, next;
+  var positions;
 
-  var vector     = this.getVector(direction);
+  var vector = this.vectors[direction];
   var traversals = this.buildTraversals(vector);
-  var moved      = false;
-  var score      = 0;
-  var won        = false;
+  var moved = false;
+  var score = 0;
+  var won = false;
+
+  // xl and yl should be the same
+  var xi = 0, yi, xl = traversals.x.length, yl = traversals.y.length;
+  var x, y;
 
   // Save the current tile positions and remove merger information
   this.prepareTiles();
 
   // Traverse the grid in the right direction and move tiles
-  traversals.x.forEach(function (x) {
-    traversals.y.forEach(function (y) {
-      cell = self.indexes[x][y];
-      tile = self.cellContent(cell);
+  for (; xi < xl; xi++) {
+    x = traversals.x[xi];
+    for (yi = 0; yi < yl; yi++) {
+      y = traversals.y[yi];
+      tile = self.cellContent(x, y);
 
       if (tile) {
-        //if (debug) {
-          //console.log('tile @', x, y);
-        //}
-        var positions = self.findFarthestPosition(cell, vector);
-        var next      = self.cellContent(positions.next);
+        cell = self.indexes[x][y];
+        positions = self.findFarthestPosition(cell, vector);
+        next = positions.next;
+        next = self.cellContent(next.x, next.y);
 
         // Only one merger per row traversal?
         if (next && next.value === tile.value && !next.mergedFrom) {
@@ -208,10 +254,6 @@ Grid.prototype.move = function (direction) {
             won = true;
           }
         } else {
-          //if (debug) {
-            //console.log(cell);
-            //console.log(tile);
-          //}
           self.moveTile(tile, positions.farthest);
         }
 
@@ -221,33 +263,29 @@ Grid.prototype.move = function (direction) {
           moved = true; // The tile moved from its original cell!
         }
       }
-    });
-  });
+    }
+  }
 
-  //console.log('returning, playerturn is', self.playerTurn);
-  //if (!moved) {
-    //console.log('cell', cell);
-    //console.log('tile', tile);
-    //console.log('direction', direction);
-    //console.log(this.toString());
-  //}
-  return {moved: moved, score: score, won: won};
+  return {
+    moved: moved,
+    score: score,
+    won: won
+  };
 };
 
 Grid.prototype.computerMove = function() {
   this.addRandomTile();
   this.playerTurn = true;
-}
+};
 
 // Build a list of positions to traverse in the right order
 Grid.prototype.buildTraversals = function (vector) {
-  var traversals = { x: [], y: [] };
+  var traversals = {x: [], y: []}, pos, s = this.size;
 
-  for (var pos = 0; pos < this.size; pos++) {
+  for (pos = 0; pos < s; pos++) {
     traversals.x.push(pos);
     traversals.y.push(pos);
   }
-
   // Always traverse from the farthest cell in the chosen direction
   if (vector.x === 1) traversals.x = traversals.x.reverse();
   if (vector.y === 1) traversals.y = traversals.y.reverse();
@@ -256,18 +294,19 @@ Grid.prototype.buildTraversals = function (vector) {
 };
 
 Grid.prototype.findFarthestPosition = function (cell, vector) {
-  var previous;
+  var vx = vector.x, vy = vector.y, cx = cell.x, cy = cell.y, px, py;
 
   // Progress towards the vector direction until an obstacle is found
   do {
-    previous = cell;
-    cell     = { x: previous.x + vector.x, y: previous.y + vector.y };
-  } while (this.withinBounds(cell) &&
-           this.cellAvailable(cell));
+    px = cx;
+    py = cy;
+    cx += vx;
+    cy += vy;
+  } while (this.withinBounds(cx, cy) && !this.cells[cx][cy]);
 
   return {
-    farthest: previous,
-    next: cell // Used to check if a merge is required
+    farthest: new Vector(px, py),
+    next: new Vector(cx, cy) // Used to check if a merge is required
   };
 };
 
@@ -280,31 +319,25 @@ Grid.prototype.movesAvailable = function () {
 Grid.prototype.tileMatchesAvailable = function () {
   var self = this;
 
-  //var matches = 0;
+  var tile, x = 0, y, s = this.size;
 
-  var tile;
-
-  for (var x = 0; x < this.size; x++) {
-    for (var y = 0; y < this.size; y++) {
-      tile = this.cellContent({ x: x, y: y });
-
-      if (tile) {
+  for (; x < s; x++) {
+    for (y = 0; y < s; y++) {
+      if (tile = this.cellContent(x, y)) {
         for (var direction = 0; direction < 4; direction++) {
-          var vector = self.getVector(direction);
-          var cell   = { x: x + vector.x, y: y + vector.y };
+          var vector = self.vectors[direction];
 
-          var other  = self.cellContent(cell);
+          var other = self.cellContent(x + vector.x, y + vector.y);
 
           if (other && other.value === tile.value) {
-            return true; //matches++; // These two tiles can be merged
+            return true; // These two tiles can be merged
           }
         }
       }
     }
   }
 
-  //console.log(matches);
-  return false; //matches;
+  return false;
 };
 
 Grid.prototype.positionsEqual = function (first, second) {
@@ -313,8 +346,8 @@ Grid.prototype.positionsEqual = function (first, second) {
 
 Grid.prototype.toString = function() {
   string = '';
-  for (var i=0; i<4; i++) {
-    for (var j=0; j<4; j++) {
+  for (var i = 0; i < 4; i++) {
+    for (var j = 0; j < 4; j++) {
       if (this.cells[j][i]) {
         string += this.cells[j][i].value + ' ';
       } else {
@@ -324,90 +357,87 @@ Grid.prototype.toString = function() {
     string += '\n';
   }
   return string;
-}
+};
 
-// counts the number of isolated groups. 
+// counts the number of isolated groups.
 Grid.prototype.islands = function() {
-  var self = this;
-  var mark = function(x, y, value) {
-    if (x >= 0 && x <= 3 && y >= 0 && y <= 3 &&
-        self.cells[x][y] &&
-        self.cells[x][y].value == value &&
-        !self.cells[x][y].marked ) {
-      self.cells[x][y].marked = true;
-      
-      for (direction in [0,1,2,3]) {
-        var vector = self.getVector(direction);
-        mark(x + vector.x, y + vector.y, value);
+  var cells = this.cells;
+  function mark(x, y, value) {
+    if (x >= 0 && x < 4 && y >= 0 && y < 4 &&
+      cells[x][y] && cells[x][y].value === value && !cells[x][y].marked) {
+      cells[x][y].marked = true;
+
+      mark(x, y - 1, value);
+      mark(x + 1, y, value);
+      mark(x, y + 1, value);
+      mark(x - 1, y, value);
+    }
+  }
+
+  var x, y, islands = 0;
+
+  for (x = 0; x < 4; x++) {
+    for (y = 0; y < 4; y++) {
+      if (cells[x][y]) {
+        cells[x][y].marked = false
       }
     }
   }
 
-  var islands = 0;
-
-  for (var x=0; x<4; x++) {
-    for (var y=0; y<4; y++) {
-      if (this.cells[x][y]) {
-        this.cells[x][y].marked = false
-      }
-    }
-  }
-  for (var x=0; x<4; x++) {
-    for (var y=0; y<4; y++) {
-      if (this.cells[x][y] &&
-          !this.cells[x][y].marked) {
+  for (x = 0; x < 4; x++) {
+    for (y = 0; y < 4; y++) {
+      if (cells[x][y] &&
+          !cells[x][y].marked) {
         islands++;
-        mark({ x:x, y:y }, this.cells[x][y].value);
+        mark(x, y, cells[x][y].value);
       }
     }
   }
-  
+
   return islands;
-}
+};
 
 
 // measures how smooth the grid is (as if the values of the pieces
 // were interpreted as elevations). Sums of the pairwise difference
 // between neighboring tiles (in log space, so it represents the
-// number of merges that need to happen before they can merge). 
+// number of merges that need to happen before they can merge).
 // Note that the pieces can be distant
 Grid.prototype.smoothness = function() {
-  var smoothness = 0;
-  for (var x=0; x<4; x++) {
-    for (var y=0; y<4; y++) {
-      if ( this.cellOccupied( this.indexes[x][y] )) {
-        var value = Math.log(this.cellContent( this.indexes[x][y] ).value) / Math.log(2);
-        for (var direction=1; direction<=2; direction++) {
-          var vector = this.getVector(direction);
-          var targetCell = this.findFarthestPosition(this.indexes[x][y], vector).next;
-
-          if (this.cellOccupied(targetCell)) {
-            var target = this.cellContent(targetCell);
-            var targetValue = Math.log(target.value) / Math.log(2);
-            smoothness -= Math.abs(value - targetValue);
-          }
-        }
+  var smoothness = 0, x = 0, y, cell, value, direction, vector, targetCell, target;
+  for (; x < 4; x++) {
+    for (y = 0; y < 4; y++) {
+      if (cell = this.cellContent(x, y)) {
+        // not DRY but no loop...effectively same except the vector index changes
+        value = Math.log(cell.value) / Math.LN2;
+        targetCell = this.findFarthestPosition(this.indexes[x][y], this.vectors[1]).next;
+        target = this.cellContent(targetCell.x, targetCell.y);
+        if (target)
+          smoothness -= Math.abs(value - Math.log(target.value) / Math.LN2);
+        targetCell = this.findFarthestPosition(this.indexes[x][y], this.vectors[2]).next;
+        target = this.cellContent(targetCell.x, targetCell.y);
+        if (target)
+          smoothness -= Math.abs(value - Math.log(target.value) / Math.LN2);
       }
     }
   }
   return smoothness;
-}
+};
 
 Grid.prototype.monotonicity = function() {
-  var self = this;
-  var marked = [];
-  var queued = [];
+  var self = this, cells = this.cells;
+  var marked = new Array(4), queued = new Array(4);
   var highestValue = 0;
-  var highestCell = {x:0, y:0};
-  for (var x=0; x<4; x++) {
-    marked.push([]);
-    queued.push([]);
-    for (var y=0; y<4; y++) {
-      marked[x].push(false);
-      queued[x].push(false);
-      if (this.cells[x][y] &&
-          this.cells[x][y].value > highestValue) {
-        highestValue = this.cells[x][y].value;
+  var highestCell = new Vector(0, 0);
+  var a, b, x = 0, y;
+  for (; x < 4; x++) {
+    marked[x] = a = new Array(4);
+    queued[y] = b = new Array(4);
+    for (y = 0; y < 4; y++) {
+      a[y] = false;
+      b[y] = false;
+      if (cells[x][y] && cells[x][y].value > highestValue) {
+        highestValue = cells[x][y].value;
         highestCell.x = x;
         highestCell.y = y;
       }
@@ -420,32 +450,31 @@ Grid.prototype.monotonicity = function() {
   markList = [highestCell];
   markAfter = 1; // only mark after all queued moves are done, as if searching in parallel
 
-  var markAndScore = function(cell) {
+  function markAndScore(cell) {
     markList.push(cell);
-    var value;
-    if (self.cellOccupied(cell)) {
-      value = Math.log(self.cellContent(cell).value) / Math.log(2);
+    var value, tile, x = cell.x, y = cell.y;
+    if (tile = self.cellContent(x, y)) {
+      value = Math.log(tile.value) / Math.LN2;
     } else {
       value = 0;
     }
-    for (direction in [0,1,2,3]) {
-      var vector = self.getVector(direction);
-      var target = { x: cell.x + vector.x, y: cell.y+vector.y }
-      if (self.withinBounds(target) && !marked[target.x][target.y]) {
-        if ( self.cellOccupied(target) ) {
-          targetValue = Math.log(self.cellContent(target).value ) / Math.log(2);
-          if ( targetValue > value ) {
-            //console.log(cell, value, target, targetValue);
+    for (var direction = 0; direction < 4; direction++) {
+      var vector = self.vectors[direction];
+      var x = x + vector.x, y = y + vector.y;
+      if (self.withinBounds(x, y) && !marked[x][y]) {
+        if (tile = self.cells[x][y]) {
+          targetValue = Math.log(tile.value) / Math.LN2;
+          if (targetValue > value) {
             increases += targetValue - value;
           }
-        } 
-        if (!queued[target.x][target.y]) {
-          cellQueue.push(target);
-          queued[target.x][target.y] = true;
+        }
+        if (!queued[x][y]) {
+          cellQueue.push(new Vector(x, y));
+          queued[x][y] = true;
         }
       }
     }
-    if (markAfter == 0) {
+    if (markAfter === 0) {
       while (markList.length > 0) {
         var cel = markList.pop();
         marked[cel.x][cel.y] = true;
@@ -460,28 +489,33 @@ Grid.prototype.monotonicity = function() {
   }
 
   return -increases;
-}
+};
 
 // measures how monotonic the grid is. This means the values of the tiles are strictly increasing
 // or decreasing in both the left/right and up/down directions
 Grid.prototype.monotonicity2 = function() {
   // scores for all four directions
-  var totals = [0, 0, 0, 0];
+  var totals = [0, 0, 0, 0], x = 0, y = 0;
+  var current, next, currentValue, nextValue;
 
   // up/down direction
-  for (var x=0; x<4; x++) {
-    var current = 0;
-    var next = current+1;
-    while ( next<4 ) {
-      while ( next<4 && !this.cellOccupied( this.indexes[x][next] )) {
+  for (; x < 4; x++) {
+    current = 0;
+    next = current + 1;
+    while (next < 4) {
+      // while (next < 4 && !this.cellOccupied(x, next)) {
+      while (next < 4 && !this.cellContent(x, next)) {
         next++;
       }
-      if (next>=4) { next--; }
-      var currentValue = this.cellOccupied({x:x, y:current}) ?
-        Math.log(this.cellContent( this.indexes[x][current] ).value) / Math.log(2) :
+      if (next >= 4) next--;
+      // TODO: optimize
+      // currentValue = this.cellOccupied(x, current) ?
+      currentValue = this.cellContent(x, current) ?
+        Math.log(this.cellContent(x, current).value) / Math.LN2 :
         0;
-      var nextValue = this.cellOccupied({x:x, y:next}) ?
-        Math.log(this.cellContent( this.indexes[x][next] ).value) / Math.log(2) :
+      // nextValue = this.cellOccupied(x, next) ?
+      nextValue = this.cellContent(x, next) ?
+        Math.log(this.cellContent(x, next).value) / Math.LN2 :
         0;
       if (currentValue > nextValue) {
         totals[0] += nextValue - currentValue;
@@ -494,19 +528,23 @@ Grid.prototype.monotonicity2 = function() {
   }
 
   // left/right direction
-  for (var y=0; y<4; y++) {
-    var current = 0;
-    var next = current+1;
-    while ( next<4 ) {
-      while ( next<4 && !this.cellOccupied( this.indexes[next][y] )) {
+  for (; y < 4; y++) {
+    current = 0;
+    next = current+1;
+    while (next < 4) {
+      // while (next < 4 && !this.cellOccupied(next, y)) {
+      while (next < 4 && !this.cellContent(next, y)) {
         next++;
       }
-      if (next>=4) { next--; }
-      var currentValue = this.cellOccupied({x:current, y:y}) ?
-        Math.log(this.cellContent( this.indexes[current][y] ).value) / Math.log(2) :
+      if (next >= 4) next--;
+      // TODO: optimize
+      // currentValue = this.cellOccupied(current, y) ?
+      currentValue = this.cellContent(current, y) ?
+        Math.log(this.cellContent(current, y).value) / Math.LN2 :
         0;
-      var nextValue = this.cellOccupied({x:next, y:y}) ?
-        Math.log(this.cellContent( this.indexes[next][y] ).value) / Math.log(2) :
+      // nextValue = this.cellOccupied(next, y) ?
+      nextValue = this.cellContent(next, y) ?
+        Math.log(this.cellContent(next, y).value) / Math.LN2 :
         0;
       if (currentValue > nextValue) {
         totals[2] += nextValue - currentValue;
@@ -519,65 +557,62 @@ Grid.prototype.monotonicity2 = function() {
   }
 
   return Math.max(totals[0], totals[1]) + Math.max(totals[2], totals[3]);
-}
+};
 
 Grid.prototype.maxValue = function() {
-  var max = 0;
-  for (var x=0; x<4; x++) {
-    for (var y=0; y<4; y++) {
-      if (this.cellOccupied(this.indexes[x][y])) {
-        var value = this.cellContent(this.indexes[x][y]).value;
-        if (value > max) {
-          max = value;
-        }
+  var max = 0, x = 0, y, cell;
+  for (; x < 4; x++) {
+    for (y = 0; y < 4; y++) {
+      var cell = this.cellContent(x, y);
+      if (cell && cell.value > max) {
+        max = cell.value;
       }
     }
   }
 
-  return Math.log(max) / Math.log(2);
-}
+  return Math.log(max) / Math.LN2;
+};
 
 // WIP. trying to favor top-heavy distributions (force consolidation of higher value tiles)
 /*
 Grid.prototype.valueSum = function() {
   var valueCount = [];
-  for (var i=0; i<11; i++) {
+  for (var i = 0; i < 11; i++) {
     valueCount.push(0);
   }
 
-  for (var x=0; x<4; x++) {
-    for (var y=0; y<4; y++) {
-      if (this.cellOccupied(this.indexes[x][y])) {
-        valueCount[Math.log(this.cellContent(this.indexes[x][y]).value) / Math.log(2)]++;
+  for (var x = 0; x < 4; x++) {
+    for (var y = 0; y < 4; y++) {
+      if (this.cellOccupied(x, y)) {
+        valueCount[Math.log(this.cellContent(x, y).value) / Math.LN2]++;
       }
     }
   }
 
   var sum = 0;
-  for (var i=1; i<11; i++) {
+  for (var i = 1; i < 11; i++) {
     sum += valueCount[i] * Math.pow(2, i) + i;
   }
 
   return sum;
-}
+};
 */
 
 // check for win
 Grid.prototype.isWin = function() {
-  var self = this;
-  for (var x=0; x<4; x++) {
-    for (var y=0; y<4; y++) {
-      if (self.cellOccupied(this.indexes[x][y])) {
-        if (self.cellContent(this.indexes[x][y]).value == 2048) {
-          return true;
-        }
+  var self = this, cell, x = 0, y;
+  for (; x < 4; x++) {
+    for (y = 0; y < 4; y++) {
+      var cell = self.cellContent(x, y);
+      if (cell && cell.value === 2048) {
+        return true;
       }
     }
   }
   return false;
-}
+};
 
 //Grid.prototype.zobristTable = {}
 //for
 //Grid.prototype.hash = function() {
-//}
+//};
