@@ -48,7 +48,7 @@ AI.prototype.search = function(depth, alpha, beta, positions, cutoffs) {
         if (depth === 0) {
           result = {move: direction, score: newAI.eval()};
         } else {
-          result = newAI.search(depth-1, bestScore, beta, positions, cutoffs);
+          result = newAI.search(depth - 1, bestScore, beta, positions, cutoffs);
           if (result.score > 9900) { // win
             result.score--; // to slightly penalize higher depth from win
           }
