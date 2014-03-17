@@ -2,7 +2,6 @@ function HTMLActuator() {
   this.tileContainer = document.getElementsByClassName("tile-container")[0];
   this.scoreContainer = document.getElementsByClassName("score-container")[0];
   this.messageContainer = document.getElementsByClassName("game-message")[0];
-  this.sharingContainer = document.getElementsByClassName("score-sharing")[0];
 
   this.score = 0;
 }
@@ -113,35 +112,16 @@ HTMLActuator.prototype.message = function (won) {
 
   this.messageContainer.classList.add(type);
   this.messageContainer.getElementsByTagName("p")[0].textContent = message;
-
-  this.clearContainer(this.sharingContainer);
-  this.sharingContainer.appendChild(this.scoreTweetButton());
-  twttr.widgets.load();
 };
 
 HTMLActuator.prototype.clearMessage = function () {
   this.messageContainer.classList.remove("game-won", "game-over");
 };
 
-HTMLActuator.prototype.scoreTweetButton = function () {
-  var tweet = document.createElement("a");
-  tweet.classList.add("twitter-share-button");
-  tweet.setAttribute("href", "https://twitter.com/share");
-  tweet.setAttribute("data-via", "gabrielecirulli");
-  tweet.textContent = "Tweet";
-
-  var text = "I scored " + this.score + " points at 2048, a game where you " +
-             "join numbers to score high! #2048game #2048ai";
-  tweet.setAttribute("data-text", text);
-
-  return tweet;
-};
-
-
 HTMLActuator.prototype.showHint = function(hint) {
   document.getElementById('feedback-container').innerHTML = ['↑','→','↓','←'][hint];
-}
+};
 
 HTMLActuator.prototype.setRunButton = function(message) {
   document.getElementById('run-button').innerHTML = message;
-}
+};
